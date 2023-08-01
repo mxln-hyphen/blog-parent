@@ -22,7 +22,7 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public Result findUserByToken(String token) {
-        /**
+         /**
          * 1、token合法性校验（是否为空，解析是否成功，redis中是否存在）
          * 2、如果检验失败，返回错误
          * 3、如果检验成功，返回对应的结果LoginUserVo
@@ -60,5 +60,18 @@ public class SysUserServiceImpl implements SysUserService {
         queryWrapper.last("limit 1");
 
         return sysUserMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public SysUser findUserByAccount(String account) {
+        LambdaQueryWrapper<SysUser> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SysUser::getAccount,account);
+        queryWrapper.last("limit 1");
+        return this.sysUserMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public void save(SysUser sysUser) {
+        this.sysUserMapper.insert(sysUser);
     }
 }

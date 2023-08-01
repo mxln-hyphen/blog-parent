@@ -3,11 +3,12 @@ package com.itmxln.blog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itmxln.blog.dao.dos.Archives;
+import com.itmxln.blog.dao.mapper.ArticleBodyMapper;
 import com.itmxln.blog.dao.mapper.ArticleMapper;
 import com.itmxln.blog.dao.pojo.Article;
-import com.itmxln.blog.service.ArticleService;
-import com.itmxln.blog.service.SysUserService;
-import com.itmxln.blog.service.TagService;
+import com.itmxln.blog.dao.pojo.ArticleBody;
+import com.itmxln.blog.service.*;
+import com.itmxln.blog.vo.ArticleBodyVo;
 import com.itmxln.blog.vo.ArticleVo;
 import com.itmxln.blog.vo.Result;
 import com.itmxln.blog.vo.params.PageParams;
@@ -21,11 +22,20 @@ import java.util.List;
 
 @Service
 public class ArticleServiceImpl implements ArticleService {
-
     @Autowired
     private ArticleMapper articleMapper;
     @Autowired
+    private ArticleBodyMapper articleBodyMapper;
+
+    @Autowired
+    private ThreadService threadService;
+
+    @Autowired
+    private CategoryService categoryService;
+
+    @Autowired
     private TagService tagService;
+
     @Autowired
     private SysUserService sysUserService;
 
@@ -76,15 +86,35 @@ public class ArticleServiceImpl implements ArticleService {
         return Result.success(archivesList);
     }
 
-    private List<ArticleVo> copyList(List<Article> recodes,boolean isTag,boolean isAuthor){
+    private List<ArticleVo> copyList(List<Article> recodes,boolean isTag,boolean isAuthor,boolean isBody,boolean isCategory){
         List<ArticleVo> articleVoList = new ArrayList<>();
         for (Article recode : recodes) {
-            articleVoList.add(copy(recode,isTag,isAuthor));
+            articleVoList.add(copy(recode,isTag,isAuthor,isBody,isCategory));
         }
         return articleVoList;
     }
 
-    private ArticleVo copy(Article article,boolean isTag,boolean isAuthor){
+    private List<ArticleVo> copyList(List<Article> recodes,boolean isTag,boolean isAuthor){
+        List<ArticleVo> articleVoList = new ArrayList<>();
+        for (Article recode : recodes) {
+            articleVoList.add(copy(recode,isTag,isAuthor,false,false));
+        }
+        return articleVoList;
+    }
+
+    @Override
+    public Result findArticleById(Long articleId) {
+        /**
+         * 1、根据id查看文章信息
+         * 2、根据bodyId和categoryId去做关联查询
+         */
+        Article article = this.articleMapper.selectById(articleId);
+        ArticleVo articleVo = copy(article,true,true,true,true);
+        threadService.updateArticleViewCount(articleMapper,article);
+        return Result.success(articleVo);
+    }
+
+    private ArticleVo copy(Article article,boolean isTag,boolean isAuthor,boolean isBody,boolean isCategory){
         ArticleVo articleVo = new ArticleVo();
         BeanUtils.copyProperties(article,articleVo);
 
@@ -99,6 +129,23 @@ public class ArticleServiceImpl implements ArticleService {
             Long authorId = article.getAuthorId();
             articleVo.setAuthor(sysUserService.findUserById(authorId).getNickname() );
         }
+        //如果需要Body信息
+        if(isBody){
+            Long bodyId = article.getBodyId();
+            articleVo.setBody(findArticleBodyById(bodyId));
+        }
+        //如果需要类别信息
+        if(isCategory){
+            Long categoryId = article.getCategoryId();
+            articleVo.setCategory(categoryService.findCategoryById(categoryId));
+        }
         return articleVo;
+    }
+
+    private ArticleBodyVo findArticleBodyById(Long bodyId){
+        ArticleBody articleBody = articleBodyMapper.selectById(bodyId);
+        ArticleBodyVo articleBodyVo = new ArticleBodyVo();
+        articleBodyVo.setContent(articleBody.getContent());
+        return articleBodyVo;
     }
 }

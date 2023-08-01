@@ -20,6 +20,6 @@ public class Result {
     }
 
     public static Result fail(int code,String msg){
-        return new Result(false,code,"fail",null);
+        return new Result(false,code,msg,null);
     }
 }
