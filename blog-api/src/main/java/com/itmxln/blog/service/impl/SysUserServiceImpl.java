@@ -8,7 +8,9 @@ import com.itmxln.blog.service.SysUserService;
 import com.itmxln.blog.vo.ErrorCode;
 import com.itmxln.blog.vo.LoginUserVo;
 import com.itmxln.blog.vo.Result;
+import com.itmxln.blog.vo.UserVo;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +18,9 @@ import org.springframework.stereotype.Service;
 public class SysUserServiceImpl implements SysUserService {
     @Autowired
     private SysUserMapper sysUserMapper;
+
     @Autowired
     private LoginService loginService;
-
 
     @Override
     public Result findUserByToken(String token) {
@@ -46,6 +48,8 @@ public class SysUserServiceImpl implements SysUserService {
         SysUser sysUser = sysUserMapper.selectById(id);
         if (sysUser == null) {
             sysUser = new SysUser();
+            sysUser.setId(1L);
+            sysUser.setAvatar("/static/img/logo.b3a48c0.png");
             sysUser.setNickname("mxln");
         }
         return sysUser;
@@ -73,5 +77,19 @@ public class SysUserServiceImpl implements SysUserService {
     @Override
     public void save(SysUser sysUser) {
         this.sysUserMapper.insert(sysUser);
+    }
+
+    @Override
+    public UserVo findUserVoById(Long id) {
+        SysUser sysUser = sysUserMapper.selectById(id);
+        if (sysUser == null) {
+            sysUser = new SysUser();
+            sysUser.setId(1L);
+            sysUser.setAvatar("/static/img/logo.b3a48c0.png");
+            sysUser.setNickname("mxln");
+        }
+        UserVo userVo = new UserVo();
+        BeanUtils.copyProperties(sysUser,userVo);
+        return userVo;
     }
 }
