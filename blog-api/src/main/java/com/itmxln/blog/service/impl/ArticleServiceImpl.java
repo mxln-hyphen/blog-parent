@@ -1,6 +1,7 @@
 package com.itmxln.blog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itmxln.blog.dao.dos.Archives;
 import com.itmxln.blog.dao.mapper.ArticleBodyMapper;
@@ -47,39 +48,50 @@ public class ArticleServiceImpl implements ArticleService {
     @Autowired
     private SysUserService sysUserService;
 
+
     @Override
-    public Result listArticle(PageParams pageParams) {
-        /**
-         * 1.分页查询article数据库表
-         */
-        Page<Article> page = new Page<>(pageParams.getPage(), pageParams.getPageSize());
-        LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
-        //增加"根据类别查询"条件
-        if(pageParams.getCategoryId()!=null){
-            queryWrapper.eq(Article::getCategoryId,pageParams.getCategoryId());
-        }
-        //增加"根据标签查询"条件
-        List<Long> articleIdList = new ArrayList<>();
-        if(pageParams.getTagId()!=null){
-            LambdaQueryWrapper<ArticleTag> articleTagLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            articleTagLambdaQueryWrapper.eq(ArticleTag::getTagId,pageParams.getTagId());
-            List<ArticleTag> articleTags = articleTagMapper.selectList(articleTagLambdaQueryWrapper);
-            for (ArticleTag articleTag : articleTags) {
-                articleIdList.add(articleTag.getArticleId());
-            }
-            if(articleIdList.size()>0){
-                queryWrapper.in(Article::getId,articleIdList);
-            }
-        }
-        //依据时间以及是否置顶排序
-        //order by create_date,weight desc
-        queryWrapper.orderByDesc(Article::getWeight,Article::getCreateDate);
-        Page<Article> articlePage = articleMapper.selectPage(page, queryWrapper);
-        List<Article> records = articlePage.getRecords();
-        //装载返回对象
-        List<ArticleVo> articleVoList = copyList(records,true,true);
-        return Result.success(articleVoList);
+    public Result listArticle(PageParams pageParams){
+        Page<Article> page = new Page<>(pageParams.getPage(),pageParams.getPageSize());
+        IPage<Article> articleIPage = this.articleMapper.listArticle(page,
+                pageParams.getCategoryId(),
+                pageParams.getTagId(),
+                pageParams.getYear(),
+                pageParams.getMonth());
+        return Result.success(copyList(articleIPage.getRecords(),true,true));
     }
+    // @Override
+    // public Result listArticle(PageParams pageParams) {
+    //     /**
+    //      * 1.分页查询article数据库表
+    //      */
+    //     Page<Article> page = new Page<>(pageParams.getPage(), pageParams.getPageSize());
+    //     LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
+    //     //增加"根据类别查询"条件
+    //     if(pageParams.getCategoryId()!=null){
+    //         queryWrapper.eq(Article::getCategoryId,pageParams.getCategoryId());
+    //     }
+    //     //增加"根据标签查询"条件
+    //     List<Long> articleIdList = new ArrayList<>();
+    //     if(pageParams.getTagId()!=null){
+    //         LambdaQueryWrapper<ArticleTag> articleTagLambdaQueryWrapper = new LambdaQueryWrapper<>();
+    //         articleTagLambdaQueryWrapper.eq(ArticleTag::getTagId,pageParams.getTagId());
+    //         List<ArticleTag> articleTags = articleTagMapper.selectList(articleTagLambdaQueryWrapper);
+    //         for (ArticleTag articleTag : articleTags) {
+    //             articleIdList.add(articleTag.getArticleId());
+    //         }
+    //         if(articleIdList.size()>0){
+    //             queryWrapper.in(Article::getId,articleIdList);
+    //         }
+    //     }
+    //     //依据时间以及是否置顶排序
+    //     //order by create_date,weight desc
+    //     queryWrapper.orderByDesc(Article::getWeight,Article::getCreateDate);
+    //     Page<Article> articlePage = articleMapper.selectPage(page, queryWrapper);
+    //     List<Article> records = articlePage.getRecords();
+    //     //装载返回对象
+    //     List<ArticleVo> articleVoList = copyList(records,true,true);
+    //     return Result.success(articleVoList);
+    // }
 
     @Override
     public Result hotArticle(int limit) {
