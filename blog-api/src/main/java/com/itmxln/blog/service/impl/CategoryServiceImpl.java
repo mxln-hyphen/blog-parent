@@ -45,4 +45,17 @@ public class CategoryServiceImpl implements CategoryService {
         }
         return categoryVoList;
     }
+
+    @Override
+    public Result findALLDetail() {
+        List<Category> categories = categoryMapper.selectList(new LambdaQueryWrapper<>());
+        return Result.success(copyList(categories));
+    }
+
+    @Override
+    public Result findCategoryDetailById(Long id) {
+        Category category = categoryMapper.selectById(id);
+        CategoryVo categoryVo = copy(category);
+        return Result.success(categoryVo);
+    }
 }

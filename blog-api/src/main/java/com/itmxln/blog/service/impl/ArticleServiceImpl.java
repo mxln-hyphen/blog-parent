@@ -54,6 +54,23 @@ public class ArticleServiceImpl implements ArticleService {
          */
         Page<Article> page = new Page<>(pageParams.getPage(), pageParams.getPageSize());
         LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
+        //增加"根据类别查询"条件
+        if(pageParams.getCategoryId()!=null){
+            queryWrapper.eq(Article::getCategoryId,pageParams.getCategoryId());
+        }
+        //增加"根据标签查询"条件
+        List<Long> articleIdList = new ArrayList<>();
+        if(pageParams.getTagId()!=null){
+            LambdaQueryWrapper<ArticleTag> articleTagLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            articleTagLambdaQueryWrapper.eq(ArticleTag::getTagId,pageParams.getTagId());
+            List<ArticleTag> articleTags = articleTagMapper.selectList(articleTagLambdaQueryWrapper);
+            for (ArticleTag articleTag : articleTags) {
+                articleIdList.add(articleTag.getArticleId());
+            }
+            if(articleIdList.size()>0){
+                queryWrapper.in(Article::getId,articleIdList);
+            }
+        }
         //依据时间以及是否置顶排序
         //order by create_date,weight desc
         queryWrapper.orderByDesc(Article::getWeight,Article::getCreateDate);
