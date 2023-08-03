@@ -1,6 +1,7 @@
 package com.itmxln.blog.service;
 
 import com.itmxln.blog.vo.Result;
+import com.itmxln.blog.vo.params.ArticleParam;
 import com.itmxln.blog.vo.params.PageParams;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -33,4 +34,12 @@ public interface ArticleService {
      * @return
      */
     Result findArticleById(Long articleId);
+
+
+    /**
+     * 文章发布服务
+     * @param articleParam
+     * @return
+     */
+    Result publish(ArticleParam articleParam);
 }

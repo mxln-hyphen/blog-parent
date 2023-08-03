@@ -23,7 +23,8 @@ public class WebMVCConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/comments/create/change") //写评论
+                .addPathPatterns("/comments/create/change")     //写评论
+                .addPathPatterns("/articles/publish")           //提交文章
                 .addPathPatterns("/test");
     }
 }

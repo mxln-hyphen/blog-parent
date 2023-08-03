@@ -5,12 +5,18 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itmxln.blog.dao.dos.Archives;
 import com.itmxln.blog.dao.mapper.ArticleBodyMapper;
 import com.itmxln.blog.dao.mapper.ArticleMapper;
+import com.itmxln.blog.dao.mapper.ArticleTagMapper;
 import com.itmxln.blog.dao.pojo.Article;
 import com.itmxln.blog.dao.pojo.ArticleBody;
+import com.itmxln.blog.dao.pojo.ArticleTag;
+import com.itmxln.blog.dao.pojo.SysUser;
 import com.itmxln.blog.service.*;
+import com.itmxln.blog.utils.UserThreadLocal;
 import com.itmxln.blog.vo.ArticleBodyVo;
 import com.itmxln.blog.vo.ArticleVo;
 import com.itmxln.blog.vo.Result;
+import com.itmxln.blog.vo.TagVo;
+import com.itmxln.blog.vo.params.ArticleParam;
 import com.itmxln.blog.vo.params.PageParams;
 import org.joda.time.DateTime;
 import org.springframework.beans.BeanUtils;
@@ -26,6 +32,8 @@ public class ArticleServiceImpl implements ArticleService {
     private ArticleMapper articleMapper;
     @Autowired
     private ArticleBodyMapper articleBodyMapper;
+    @Autowired
+    private ArticleTagMapper articleTagMapper;
 
     @Autowired
     private ThreadService threadService;
@@ -147,5 +155,53 @@ public class ArticleServiceImpl implements ArticleService {
         ArticleBodyVo articleBodyVo = new ArticleBodyVo();
         articleBodyVo.setContent(articleBody.getContent());
         return articleBodyVo;
+    }
+
+    @Override
+    public Result publish(ArticleParam articleParam) {
+        /**
+         * 1、发布文章，构建article对象
+         * 2、作者id 当前登录用户
+         * 3、标签 将标签加入关联列表中（ms_article_tag）
+         * 4、body 内容存储
+         */
+        SysUser sysUser = UserThreadLocal.get();
+        Article article = new Article();
+        //其余属性
+        article.setAuthorId(sysUser.getId());
+        article.setCategoryId(articleParam.getCategory().getId());
+        article.setCreateDate(System.currentTimeMillis());
+        article.setCommentCounts(0);
+        article.setSummary(articleParam.getSummary());
+        article.setTitle(articleParam.getTitle());
+        article.setViewCounts(0);
+        article.setWeight(Article.Article_Common);
+        article.setBodyId(-1L);
+        //先插入一次 生成一个文章id 便于后面更新其他表
+        this.articleMapper.insert(article);
+        //tag
+        List<TagVo> tags = articleParam.getTags();
+        if(tags!=null){
+            for (TagVo tag : tags) {
+                Long articleId = article.getId();
+                ArticleTag articleTag = new ArticleTag();
+                articleTag.setTagId(tag.getId());
+                articleTag.setArticleId(articleId);
+                articleTagMapper.insert(articleTag);
+            }
+        }
+        //body
+        ArticleBody articleBody = new ArticleBody();
+        articleBody.setArticleId(article.getId());
+        articleBody.setContent(articleParam.getBody().getContent());
+        articleBody.setContentHtml(articleParam.getBody().getContentHtml());
+        articleBodyMapper.insert(articleBody);
+        //更新articleBodyId
+        article.setBodyId(articleBody.getId());
+        articleMapper.updateById(article);
+
+        ArticleVo articleVo = new ArticleVo();
+        articleVo.setId(article.getId());
+        return Result.success(articleVo);
     }
 }
